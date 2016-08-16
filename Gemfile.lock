@@ -1,0 +1,19 @@
+PATH
+  remote: .
+  specs:
+    eth_json_rpc (0.0.1)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    minitest (5.8.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  eth_json_rpc!
+  minitest (= 5.8.3)
+
+BUNDLED WITH
+   1.12.5
