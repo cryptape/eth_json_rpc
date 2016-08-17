@@ -2,16 +2,22 @@ PATH
   remote: .
   specs:
     eth_json_rpc (0.0.1)
+      digest-sha3
+      rlp
 
 GEM
   remote: https://rubygems.org/
   specs:
+    byebug (9.0.5)
+    digest-sha3 (1.1.0)
     minitest (5.8.3)
+    rlp (0.7.3)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  byebug
   eth_json_rpc!
   minitest (= 5.8.3)
 

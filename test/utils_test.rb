@@ -1,8 +1,8 @@
 require 'test_helper'
 
 class UtilsTest < Minitest::Test
-  include EthJsonRpc::Util
-  include EthJsonRpc::Constant
+  include EthJsonRpc::Utils
+  include EthJsonRpc::Constants
 
   def test_hex_to_dec
     assert_equal hex_to_dec("0xb"), 11
@@ -28,5 +28,9 @@ class UtilsTest < Minitest::Test
 
   def test_ether_to_wei
     assert_equal ether_to_wei(1), 10**18
+  end
+
+  def test_encode_to_hex
+    assert_equal encode_to_hex('abd8'), "61626438"
   end
 end
