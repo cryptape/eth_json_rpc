@@ -1,7 +1,7 @@
 require 'test_helper'
 
-# start geth: geth --rpcapi "eth,web3" --testnet
-# geth attach: geth attach ipc:/Users/u2/Library/Ethereum/testnet/geth.ipc
+# start geth: geth --rpcapi "eth,web3"
+# geth attach: geth attach
 # open rpc: admin.startRPC("127.0.0.1", 8545, "*", "web3,net,eth")
 class ClientTest < Minitest::Test
   def setup
@@ -17,13 +17,13 @@ class ClientTest < Minitest::Test
   def test_eth_coinbase
     account = @client.eth_coinbase
 
-    assert_equal account.size, 42
+    assert_equal 42, account.size
   end
 
   def test_eth_mining
     mining = @client.eth_mining
 
-    assert_equal mining, false
+    assert_equal false, mining
   end
 
   def test_web3_clientVersion
@@ -35,19 +35,19 @@ class ClientTest < Minitest::Test
   def test_web3_sha3
     sha3 = @client.web3_sha3('0x68656c6c6f20776f726c64')
 
-    assert_equal sha3, '0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad'
+    assert_equal '0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad', sha3
   end
 
   def test_net_version
     version = @client.net_version
 
-    assert_equal version, "2"
+    assert_equal "1", version
   end
 
   def test_net_listening
     listening = @client.net_listening
 
-    assert_equal listening, true
+    assert_equal true, listening
   end
 
   def test_net_peerCount
@@ -62,16 +62,10 @@ class ClientTest < Minitest::Test
     assert eth_protocolVersion.kind_of?(String)
   end
 
-  def test_eth_syncing
-    eth_syncing = @client.eth_syncing
-
-    assert eth_syncing.has_key?("currentBlock")
-  end
-
   def test_eth_hashrate
     eth_hashrate = @client.eth_hashrate
 
-    assert_equal eth_hashrate, 0
+    assert_equal 0, eth_hashrate
   end
 
   def test_eth_gasPrice
@@ -87,7 +81,7 @@ class ClientTest < Minitest::Test
   end
 
   def test_eth_getBalance
-    balance = @client.eth_getBalance('0x21b2b9b4630d600a66cbd45e4dc68368777d5909')
+    balance = @client.eth_getBalance('0xb64c196e007632caea083f50a97660f9bf083d20')
 
     assert balance.kind_of?(Numeric)
   end
@@ -107,7 +101,7 @@ class ClientTest < Minitest::Test
   def test_eth_getBlockTransactionCountByHash
     block = @client.eth_getBlockTransactionCountByHash("0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238")
 
-    assert_equal block, nil
+    assert_equal nil, block
   end
 
   def test_eth_getBlockTransactionCountByNumber
@@ -116,19 +110,105 @@ class ClientTest < Minitest::Test
     assert block.kind_of?(Integer)
   end
 
-  def test_eth_getCode
-    code = @client.eth_getCode('0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b', 2)
-
-    assert_equal code, '0x'
-  end
-
   def test_eth_sign
     # curl http://localhost:8545 -X POST -d '{"jsonrpc":"2.0","method":"eth_sign","params":["0x8a3106a3e50576d4b6794a0e74d3bb5f8c9acaab", "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"],"id":1}'
     # {"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"account is locked"}}
-    assert_raises StandardError do
-      @client.eth_sign('0x21b2b9b4630d600a66cbd45e4dc68368777d5909', '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470')
+    exception = assert_raises StandardError do
+      @client.eth_sign('0xb64c196e007632caea083f50a97660f9bf083d20', '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470')
     end
+
+    assert_equal({"code"=>-32000, "message"=>"account is locked"}.to_s, exception.message)
   end
 
-  def 
+  def test_eth_sendTransaction
+    params = {
+      from: "0xb64c196e007632caea083f50a97660f9bf083d20",
+      to: "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
+      gas: 30400,
+      gasPrice: 10000000000000,
+      value: 2441406250
+    }
+
+    exception = assert_raises StandardError do
+      @client.eth_sendTransaction(params)
+    end
+
+    assert_equal({"code"=>-32000, "message"=>"account is locked"}.to_s, exception.message)
+  end
+
+  def test_eth_sendRawTransaction
+    data = "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
+
+    exception = assert_raises StandardError do
+      @client.eth_sendRawTransaction(data)
+    end
+
+    assert_equal({"code"=>-32000, "message"=>"rlp: element is larger than containing list"}.to_s, exception.message)
+  end
+
+  def test_eth_call
+    params = {
+      from: "0xb64c196e007632caea083f50a97660f9bf083d20",
+      to: "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
+      gas: 30400,
+      gasPrice: 10000000000000,
+      value: 2441406250
+    }
+
+    r = @client.eth_call(params)
+
+    assert_equal '0x', r
+  end
+
+  def test_eth_estimateGas
+    params = {
+      from: "0xb64c196e007632caea083f50a97660f9bf083d20",
+      to: "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
+      gas: 30400,
+      gasPrice: 10000000000000,
+      value: 2441406250,
+      data: "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675"
+    }
+
+    exception = assert_raises StandardError do
+      @client.eth_estimateGas(params)
+    end
+
+    assert_equal({"code"=>-32602, "message"=>"too many params, want 1 got 2"}.to_s, exception.message)
+  end
+
+  # http://etherscan.io/block/1093000
+  def test_eth_getBlockByHash
+    r = @client.eth_getBlockByHash('0xc96d6ff0548bdd9f11a42916a2b03b19db21ae143d8b139df931d001fd59babc')
+
+    assert_equal "0xe4f9709da6b", r["difficulty"]
+  end
+
+  # http://etherscan.io/block/1093000
+  def test_eth_getBlockByNumber
+    r = @client.eth_getBlockByNumber(1093000)
+
+    assert_equal "0xe4f9709da6b", r["difficulty"]
+  end
+
+  # http://etherscan.io/tx/0x8ac3590621f25874830436111622ad1e708255cdb4c9d32e89112538488c61a8
+  def test_eth_getTransactionByHash
+    r = @client.eth_getTransactionByHash('0x8ac3590621f25874830436111622ad1e708255cdb4c9d32e89112538488c61a8')
+
+    assert_equal "0x8ac3590621f25874830436111622ad1e708255cdb4c9d32e89112538488c61a8", r["hash"]
+  end
+
+  # http://etherscan.io/tx/0xb9ecd9de745a75645ce7087f8f51618303039d213778c1ae80547c8a094b66be
+  def test_eth_getTransactionByBlockHashAndIndex
+    r = @client.eth_getTransactionByBlockHashAndIndex('0xc96d6ff0548bdd9f11a42916a2b03b19db21ae143d8b139df931d001fd59babc', 1)
+
+    assert_equal "0xb9ecd9de745a75645ce7087f8f51618303039d213778c1ae80547c8a094b66be", r["hash"]
+  end
+
+  # http://etherscan.io/tx/0xb9ecd9de745a75645ce7087f8f51618303039d213778c1ae80547c8a094b66be
+  def test_eth_getTransactionByBlockNumberAndIndex
+    r = @client.eth_getTransactionByBlockNumberAndIndex(1093000, 1)
+
+    assert_equal "0xb9ecd9de745a75645ce7087f8f51618303039d213778c1ae80547c8a094b66be", r["hash"]
+  end
 end

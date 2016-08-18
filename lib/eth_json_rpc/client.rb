@@ -26,21 +26,23 @@ module EthJsonRpc
     ##
     # Send wei from one address to another
     def transfer(from_, to, amount)
-      eth_sendTransaction(from_address=from_, to_address=to, value=amount)
+      eth_sendTransaction(from: from_, to: to, value: amount)
     end
 
     ##
     # Create a contract on the blockchain from compiled EVM code. Returns the
     # transaction hash.
-    # def create_contract(from_, code, gas, sig=None, args=None)
-    #     from_ = from_ or self.eth_coinbase
-    #     if sig is not None and args is not None
-    #        types = sig[sig.find('(') + 1: sig.find(')')].split(',')
-    #        encoded_params = encode_abi(types, args)
-    #        code += encoded_params.encode('hex')
-    #     end
-    #     return self.eth_sendTransaction(from_address=from_, gas=gas, data=code)
-    # end
+    def create_contract(from_, code, gas, sig, args)
+      from_ = from_ or self.eth_coinbase
+      if sig and args
+        i = sig.index('(') + 1
+        j = sig.index(')')
+        types = sig[i...j].split(',')
+        encoded_params = encode_abi(types, args)
+        code += encoded_params.encode('hex')
+      end
+      eth_sendTransaction(from: from_, gas: gas, data: code)
+    end
 
     ##
     # Get the address for a contract from the transaction that created it
@@ -53,22 +55,23 @@ module EthJsonRpc
     # Call a contract function on the RPC server, without sending a
     # transaction (useful for reading data)
     def call(address, sig, args, result_types)
-        data = self._encode_function(sig, args)
-        data_hex = data.encode('hex')
-        response = self.eth_call(to_address=address, data=data_hex)
-        # return decode_abi(result_types, response[2:].decode('hex'))
+      data = self._encode_function(sig, args)
+      data_hex = encode_to_hex(data)
+      response = eth_call(to: address, data: data_hex)
+      return decode_abi(result_types, encode_to_hex(response[2..-1]))
     end
 
     ##
     # Call a contract function by sending a transaction (useful for storing
     # data)
-    def call_with_transaction(from_, address, sig, args, gas=None, gas_price=None, value=None)
-        gas = gas or self.DEFAULT_GAS_PER_TX
-        gas_price = gas_price or self.DEFAULT_GAS_PRICE
-        data = self._encode_function(sig, args)
-        data_hex = data.encode('hex')
-        return self.eth_sendTransaction(from_address=from_, to_address=address, data=data_hex, gas=gas,
-                                        gas_price=gas_price, value=value)
+    def call_with_transaction(from_, address, sig, args, gas = nil, gasPrice = nil, value = nil)
+      gas = gas or DEFAULT_GAS_PER_TX
+      gasPrice = gasPrice or DEFAULT_GAS_PRICE
+      data = self._encode_function(sig, args)
+      data_hex = encode_to_hex(data)
+      eth_sendTransaction(from: from_,
+                          to: address, data: data_hex, gas: gas,
+                          gasPrice: gasPrice, value: value)
     end
 ################################################################################
 # JSON-RPC methods
@@ -225,29 +228,17 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sendtransaction
-    # def eth_sendTransaction(to_address,
-    #                         from_address,
-    #                         gas,
-    #                         gas_price,
-    #                         value,
-    #                         data,
-    #                         nonce)
-    #   params = {}
-    #   params['from'] = from_address or self.eth_coinbase
-    #   if to_address is not None
-    #       params['to'] = to_address
-    #   if gas is not None
-    #       params['gas'] = hex(gas)
-    #   if gas_price is not None
-    #       params['gasPrice'] = hex(gas_price)
-    #   if value is not None
-    #       params['value'] = hex(value)
-    #   if data is not None
-    #       params['data'] = data
-    #   if nonce is not None
-    #       params['nonce'] = hex(nonce)
-    #   _call('eth_sendTransaction', [params])
-    # end
+    def eth_sendTransaction(data = {})
+      params = {}
+      params['from'] = data[:from] or self.eth_coinbase
+      params['to'] = data[:to] if data[:to]
+      params['gas'] = int_to_hex(data[:gas]) if data[:gas]
+      params['gasPrice'] = int_to_hex(data[:gasPrice]) if data[:gasPrice]
+      params['value'] = int_to_hex(data[:value]) if data[:value]
+      params['data'] = data[:data] if data[:data]
+      params['nonce'] = int_to_hex(data[:nonce]) if data[:nonce]
+      _call('eth_sendTransaction', [params])
+    end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sendrawtransaction
@@ -257,71 +248,49 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_call
-    # def eth_call(to_address, from_address=None, gas=None, gas_price=None, value=None, data=None,
-    #              default_block=BLOCK_TAG_LATEST)
-    #   if isinstance(default_block, basestring)
-    #     if default_block not in BLOCK_TAGS:
-    #       raise ValueError
-    #     end
-    #   end
-    #   obj = {}
-    #   obj['to'] = to_address
-    #   if from_address is not None
-    #       obj['from'] = from_address
-    #   end
-    #   if gas is not None
-    #       obj['gas'] = hex(gas)
-    #   end
-    #   if gas_price is not None
-    #       obj['gasPrice'] = hex(gas_price)
-    #   end
-    #   if value is not None
-    #       obj['value'] = value
-    #   end
-    #   if data is not None
-    #       obj['data'] = data
-    #   end
-    #   _call('eth_call', [obj, default_block])
-    # end
+    def eth_call(data = {})
+      default_block = data[:default_block]
+      if default_block.is_a?(String) && !BLOCK_TAGS.include?(default_block)
+        raise ArgumentError
+      end
+      default_block = BLOCK_TAG_LATEST unless default_block
+      obj = {}
+      obj['to'] = data[:to]
+      obj['from'] = data[:from] if data[:from]
+      obj['gas'] = int_to_hex(data[:gas]) if data[:gas]
+      obj['gasPrice'] = int_to_hex(data[:gasPrice]) if data[:gasPrice]
+      obj['value'] = data[:value] if data[:value]
+      obj['data'] = data[:data] if data[:data]
+      _call('eth_call', [obj, default_block])
+    end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_estimategas
-    # def eth_estimateGas(to_address=None, from_address=None, gas=None, gas_price=None, value=None, data=None,
-    #                     default_block=BLOCK_TAG_LATEST)
-    #   if isinstance(default_block, basestring)
-    #       if default_block not in BLOCK_TAGS:
-    #           raise ValueError
-    #   obj = {}
-    #   if to_address is not None
-    #       obj['to'] = to_address
-    #   end
-    #   if from_address is not None
-    #       obj['from'] = from_address
-    #   end
-    #   if gas is not None
-    #       obj['gas'] = hex(gas)
-    #   end
-    #   if gas_price is not None
-    #       obj['gasPrice'] = hex(gas_price)
-    #   end
-    #   if value is not None
-    #       obj['value'] = value
-    #   end
-    #   if data is not None
-    #       obj['data'] = data
-    #   end
-    #   _call('eth_estimateGas', [obj, default_block])
-    # end
+    def eth_estimateGas(data = {})
+      default_block = data[:default_block]
+      if default_block.is_a?(String) && !BLOCK_TAGS.include?(default_block)
+        raise ArgumentError
+      end
+      default_block = BLOCK_TAG_LATEST unless default_block
+      obj = {}
+      obj['to'] = data[:to]
+      obj['from'] = data[:from] if data[:from]
+      obj['gas'] = int_to_hex(data[:gas]) if data[:gas]
+      obj['gasPrice'] = int_to_hex(data[:gasPrice]) if data[:gasPrice]
+      obj['value'] = data[:value] if data[:value]
+      obj['data'] = data[:data] if data[:data]
+      _call('eth_estimateGas', [obj, default_block])
+    end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getblockbyhash
-    def eth_getBlockByHash(block_hash, tx_objects=True)
+    def eth_getBlockByHash(block_hash, tx_objects = true)
       _call('eth_getBlockByHash', [block_hash, tx_objects])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getblockbynumber
-    def eth_getBlockByNumber(block=BLOCK_TAG_LATEST, tx_objects=True)
+    def eth_getBlockByNumber(block = BLOCK_TAG_LATEST, tx_objects = true)
       block = validate_block(block)
       _call('eth_getBlockByNumber', [block, tx_objects])
     end
@@ -334,15 +303,15 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyblockhashandindex
-    def eth_getTransactionByBlockHashAndIndex(block_hash, index=0)
-      _call('eth_getTransactionByBlockHashAndIndex', [block_hash, hex(index)])
+    def eth_getTransactionByBlockHashAndIndex(block_hash, index = 0)
+      _call('eth_getTransactionByBlockHashAndIndex', [block_hash, int_to_hex(index)])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyblocknumberandindex
-    def eth_getTransactionByBlockNumberAndIndex(block=BLOCK_TAG_LATEST, index=0)
+    def eth_getTransactionByBlockNumberAndIndex(block = BLOCK_TAG_LATEST, index=0)
       block = validate_block(block)
-      _call('eth_getTransactionByBlockNumberAndIndex', [block, hex(index)])
+      _call('eth_getTransactionByBlockNumberAndIndex', [block, int_to_hex(index)])
     end
 
     ##
@@ -353,15 +322,15 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getunclebyblockhashandindex
-    def eth_getUncleByBlockHashAndIndex(block_hash, index=0)
-      _call('eth_getUncleByBlockHashAndIndex', [block_hash, hex(index)])
+    def eth_getUncleByBlockHashAndIndex(block_hash, index = 0)
+      _call('eth_getUncleByBlockHashAndIndex', [block_hash, int_to_hex(index)])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getunclebyblocknumberandindex
-    def eth_getUncleByBlockNumberAndIndex(block=BLOCK_TAG_LATEST, index=0)
+    def eth_getUncleByBlockNumberAndIndex(block = BLOCK_TAG_LATEST, index = 0)
       block = validate_block(block)
-      _call('eth_getUncleByBlockNumberAndIndex', [block, hex(index)])
+      _call('eth_getUncleByBlockNumberAndIndex', [block, int_to_hex(index)])
     end
 
     ##
@@ -373,55 +342,55 @@ module EthJsonRpc
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_compilesolidity
     def eth_compileSolidity(code)
-        _call('eth_compileSolidity', [code])
+      _call('eth_compileSolidity', [code])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_compilelll
     def eth_compileLLL(code)
-        _call('eth_compileLLL', [code])
+      _call('eth_compileLLL', [code])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_compileserpent
     def eth_compileSerpent(code)
-        _call('eth_compileSerpent', [code])
+      _call('eth_compileSerpent', [code])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newfilter
     def eth_newFilter(from_block=BLOCK_TAG_LATEST, to_block=BLOCK_TAG_LATEST, address=None, topics=None)
-        _filter = {
-            'fromBlock': from_block,
-            'toBlock':   to_block,
-            'address':   address,
-            'topics':    topics,
-        }
-        _call('eth_newFilter', [_filter])
+      _filter = {
+          'fromBlock': from_block,
+          'toBlock':   to_block,
+          'address':   address,
+          'topics':    topics,
+      }
+      _call('eth_newFilter', [_filter])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newblockfilter
     def eth_newBlockFilter(default_block=BLOCK_TAG_LATEST)
-        _call('eth_newBlockFilter', [default_block])
+      _call('eth_newBlockFilter', [default_block])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newpendingtransactionfilter
     def eth_newPendingTransactionFilter
-        return hex_to_dec(_call('eth_newPendingTransactionFilter'))
+      hex_to_dec(_call('eth_newPendingTransactionFilter'))
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_uninstallfilter
     def eth_uninstallFilter(filter_id)
-        _call('eth_uninstallFilter', [filter_id])
+      _call('eth_uninstallFilter', [filter_id])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getfilterchanges
     def eth_getFilterChanges(filter_id)
-        _call('eth_getFilterChanges', [filter_id])
+      _call('eth_getFilterChanges', [filter_id])
     end
 
     ##
@@ -451,20 +420,20 @@ module EthJsonRpc
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_submithashrate
     def eth_submitHashrate(hash_rate, client_id)
-      _call('eth_submitHashrate', [hex(hash_rate), client_id])
+      _call('eth_submitHashrate', [int_to_hex(hash_rate), client_id])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#db_putstring
     def db_putString(db_name, key, value)
-      warnings.warn('deprecated', DeprecationWarning)
+      $stderr.puts "Note this function is deprecated and will be removed in the future."
       _call('db_putString', [db_name, key, value])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#db_getstring
     def db_getString(db_name, key)
-      warnings.warn('deprecated', DeprecationWarning)
+      $stderr.puts "Note this function is deprecated and will be removed in the future."
       _call('db_getString', [db_name, key])
     end
 
@@ -474,14 +443,14 @@ module EthJsonRpc
       if not value.startswith('0x')
         value = '0x{}'.format(value)
       end
-      warnings.warn('deprecated', DeprecationWarning)
+      $stderr.puts "Note this function is deprecated and will be removed in the future."
       _call('db_putHex', [db_name, key, value])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#db_gethex
     def db_getHex(db_name, key)
-      warnings.warn('deprecated', DeprecationWarning)
+      $stderr.puts "Note this function is deprecated and will be removed in the future."
       _call('db_getHex', [db_name, key])
     end
 
@@ -493,14 +462,14 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#shh_post
-    def shh_post(topics, payload, priority, ttl, from_=None, to=None)
+    def shh_post(topics, payload, priority, ttl, from_= nil, to = nil)
       whisper_object = {
-          'from':     from_,
-          'to':       to,
-          'topics':   topics,
-          'payload':  payload,
-          'priority': hex(priority),
-          'ttl':      hex(ttl),
+        'from':     from_,
+        'to':       to,
+        'topics':   topics,
+        'payload':  payload,
+        'priority': hex(priority),
+        'ttl':      hex(ttl),
       }
       _call('shh_post', [whisper_object])
     end
@@ -533,8 +502,8 @@ module EthJsonRpc
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#shh_newfilter
     def shh_newFilter(to, topics)
       _filter = {
-          'to':     to,
-          'topics': topics,
+        'to':     to,
+        'topics': topics
       }
       _call('shh_newFilter', [_filter])
     end
@@ -576,38 +545,39 @@ module EthJsonRpc
       end
 
       if r.code.to_i / 100 != 2
-        raise BadStatusCodeError(r.code)
+        raise BadStatusCodeError.new(r.code)
       end
 
       begin
         response = JSON.parse(r.body)
       rescue
-        BadJsonError(r.body)
+        BadJsonError.new(r.body)
       end
 
       if response.has_key?('result')
         response['result']
       # TODO: fixed python version
       elsif response.has_key?('error')
-        raise StandardError(response['error'])
+        raise StandardError.new(response['error'])
       else
-        raise BadResponseError(response)
+        raise BadResponseError.new(response)
       end
     end
 
     def encode_function(signature, param_values)
-      # prefix = RLP::Utils.big_endian_to_int(EthJsonRpc::Utils.keccak256(signature)[:4])
+      prefix = RLP::Utils.big_endian_to_int(EthJsonRpc::Utils.keccak256(signature)[4..-1])
 
-      if signature.find('(') == -1
-        raise RuntimeError('Invalid function signature. Missing "(" and/or ")"...')
+      if signature.index('(').nil?
+        raise RuntimeError.new('Invalid function signature. Missing "(" and/or ")"...')
       end
-      if signature.find(')') - signature.find('(') == 1
+      if signature.index(')') - signature.index('(') == 1
         return Rlp::Utils.encode_int(prefix)
       end
-      # types = signature[signature.find('(') + 1: signature.find(')')].split(',')
+      i = signature.index('(') + 1
+      j = signature.index(')')
+      types = signature[i...j].split(',')
       encoded_params = EthJsonRpc::ABI.encode_abi(types, param_values)
       return Rlp::Utils.zpad(Rlp::Utils.encode_int(prefix), 4) + encoded_params
     end
   end
 end
-
