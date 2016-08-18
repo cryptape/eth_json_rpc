@@ -5,7 +5,7 @@ require 'rlp'
 require 'eth_json_rpc/abi'
 require "eth_json_rpc/utils"
 require 'eth_json_rpc/constants'
-require 'byebug'
+# require 'byebug'
 
 module EthJsonRpc
   class Client
@@ -32,6 +32,7 @@ module EthJsonRpc
     ##
     # Create a contract on the blockchain from compiled EVM code. Returns the
     # transaction hash.
+    # TODO: Add Test
     def create_contract(from_, code, gas, sig, args)
       from_ = from_ or self.eth_coinbase
       if sig and args
@@ -54,6 +55,7 @@ module EthJsonRpc
     ##
     # Call a contract function on the RPC server, without sending a
     # transaction (useful for reading data)
+    # TODO: Add Test
     def call(address, sig, args, result_types)
       data = self._encode_function(sig, args)
       data_hex = encode_to_hex(data)
@@ -64,6 +66,7 @@ module EthJsonRpc
     ##
     # Call a contract function by sending a transaction (useful for storing
     # data)
+    # TODO: Add Test
     def call_with_transaction(from_, address, sig, args, gas = nil, gasPrice = nil, value = nil)
       gas = gas or DEFAULT_GAS_PER_TX
       gasPrice = gasPrice or DEFAULT_GAS_PRICE
@@ -359,19 +362,19 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newfilter
-    def eth_newFilter(from_block=BLOCK_TAG_LATEST, to_block=BLOCK_TAG_LATEST, address=None, topics=None)
+    def eth_newFilter(from_block = BLOCK_TAG_LATEST, to_block = BLOCK_TAG_LATEST, address, topics)
       _filter = {
-          'fromBlock': from_block,
-          'toBlock':   to_block,
-          'address':   address,
-          'topics':    topics,
+        'fromBlock': from_block,
+        'toBlock':   to_block,
+        'address':   address,
+        'topics':    topics,
       }
       _call('eth_newFilter', [_filter])
     end
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newblockfilter
-    def eth_newBlockFilter(default_block=BLOCK_TAG_LATEST)
+    def eth_newBlockFilter(default_block = BLOCK_TAG_LATEST)
       _call('eth_newBlockFilter', [default_block])
     end
 
@@ -462,7 +465,7 @@ module EthJsonRpc
 
     ##
     # @see https://github.com/ethereum/wiki/wiki/JSON-RPC#shh_post
-    def shh_post(topics, payload, priority, ttl, from_= nil, to = nil)
+    def shh_post(topics, payload, priority, ttl, from_, to)
       whisper_object = {
         'from':     from_,
         'to':       to,
@@ -564,6 +567,7 @@ module EthJsonRpc
       end
     end
 
+    # TODO: Add Test
     def encode_function(signature, param_values)
       prefix = RLP::Utils.big_endian_to_int(EthJsonRpc::Utils.keccak256(signature)[4..-1])
 

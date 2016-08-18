@@ -4,6 +4,7 @@ require 'test_helper'
 # geth attach: geth attach
 # open rpc: admin.startRPC("127.0.0.1", 8545, "*", "web3,net,eth")
 class ClientTest < Minitest::Test
+  include EthJsonRpc::Constants
   def setup
     @client = EthJsonRpc::Client.new
   end
@@ -210,5 +211,24 @@ class ClientTest < Minitest::Test
     r = @client.eth_getTransactionByBlockNumberAndIndex(1093000, 1)
 
     assert_equal "0xb9ecd9de745a75645ce7087f8f51618303039d213778c1ae80547c8a094b66be", r["hash"]
+  end
+
+  def test_transfer
+    exception = assert_raises StandardError do
+      @client.transfer('0x319109cc083a381a64c40546c92358398b82d97f', '0xE82D5B10ad98d34dF448b07a5a62C1aFfBEf758F', 100000000000000000000)
+    end
+
+    assert_equal({"code"=>-32000, "message"=>"account is locked"}.to_s, exception.message)
+  end
+
+  def test_get_contract_address
+    address = @client.get_contract_address('0xe83de3583d345726e8d8377e76ec299989166af6cd4415513a34d00c4ffa159c')
+    assert_equal '0xb2a1ac7f7253b0ebf6410920ed1342c974bca67a', address
+  end
+
+  def test_eth_newFilter
+    filters = @client.eth_newFilter(1093429, 2103429, '0xbb9bc244d798123fde783fcc1c72d3bb8c189413', ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'])
+
+    assert_equal filters.size, 34
   end
 end

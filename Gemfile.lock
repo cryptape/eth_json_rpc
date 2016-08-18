@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    eth_json_rpc (0.0.1)
+    eth_json_rpc (0.0.2)
       digest-sha3
       rlp
 
