@@ -10,9 +10,9 @@ gem build eth_json_rpc.gemspec
 gem install ./eth_json_rpc-0.0.2.gem
 ```
 
-## Useage
+## Usage
 
-```
+```ruby
 irb(main):001:0> require 'eth_json_rpc'
 => true
 irb(main):002:0> EthJsonRpc::Client.new
