@@ -2,7 +2,6 @@ require 'json'
 require 'net/http'
 require 'digest/sha3'
 require 'rlp'
-require 'eth_json_rpc/abi'
 require "eth_json_rpc/utils"
 require 'eth_json_rpc/constants'
 # require 'byebug'

@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
 
   s.files = Dir["{lib}/**/*"] + ["LICENSE", "README.md"]
 
-  s.add_dependency('digest-sha3')
-  s.add_dependency('rlp')
+  s.add_dependency('rlp', '0.7.3')
+  # s.add_dependency('ethereum-abi', '0.0.1')
   s.add_development_dependency('minitest', '5.8.3')
 end

@@ -1,16 +1,34 @@
+GIT
+  remote: git://github.com/cryptape/ruby-ethereum-abi.git
+  revision: 90d4fa3fc6b568581165eaacdc506b9b9b49e520
+  specs:
+    ethereum-abi (0.0.1)
+      block_logger (~> 0.1.2)
+      ethereum-base (~> 0.1.4)
+      rlp (~> 0.7.3)
+
 PATH
   remote: .
   specs:
     eth_json_rpc (0.0.2)
-      digest-sha3
-      rlp
+      rlp (= 0.7.3)
 
 GEM
   remote: https://rubygems.org/
   specs:
+    block_logger (0.1.2)
+      logging (~> 2.0)
     byebug (9.0.5)
     digest-sha3 (1.1.0)
+    ethereum-base (0.1.4)
+      digest-sha3 (~> 1.1)
+      rlp (~> 0.6)
+    little-plugger (1.1.4)
+    logging (2.1.0)
+      little-plugger (~> 1.1)
+      multi_json (~> 1.10)
     minitest (5.8.3)
+    multi_json (1.12.1)
     rlp (0.7.3)
 
 PLATFORMS
@@ -19,6 +37,7 @@ PLATFORMS
 DEPENDENCIES
   byebug
   eth_json_rpc!
+  ethereum-abi!
   minitest (= 5.8.3)
 
 BUNDLED WITH
