@@ -57,9 +57,9 @@ module EthJsonRpc
     # TODO: Add Test
     def call(address, sig, args, result_types)
       data = self._encode_function(sig, args)
-      data_hex = encode_to_hex(data)
+      data_hex = RLP::Utils.encode_hex(data)
       response = eth_call(to: address, data: data_hex)
-      return decode_abi(result_types, encode_to_hex(response[2..-1]))
+      return decode_abi(result_types, RLP::Utils.encode_hex(response[2..-1]))
     end
 
     ##
@@ -70,7 +70,7 @@ module EthJsonRpc
       gas = gas or DEFAULT_GAS_PER_TX
       gasPrice = gasPrice or DEFAULT_GAS_PRICE
       data = self._encode_function(sig, args)
-      data_hex = encode_to_hex(data)
+      data_hex = RLP::Utils.encode_hex(data)
       eth_sendTransaction(from: from_,
                           to: address, data: data_hex, gas: gas,
                           gasPrice: gasPrice, value: value)

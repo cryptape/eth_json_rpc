@@ -40,10 +40,6 @@ module EthJsonRpc
       Digest::SHA3.new(512).digest(x)
     end
 
-    def encode_to_hex(str)
-      str.unpack('U*').map{|i| i.to_s(16) }.join
-    end
-
     def int_to_hex(i)
       '0x' + i.to_s(16)
     end

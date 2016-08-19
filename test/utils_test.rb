@@ -29,8 +29,4 @@ class UtilsTest < Minitest::Test
   def test_ether_to_wei
     assert_equal ether_to_wei(1), 10**18
   end
-
-  def test_encode_to_hex
-    assert_equal encode_to_hex('abd8'), "61626438"
-  end
 end
